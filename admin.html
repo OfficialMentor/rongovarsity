@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel - Rongo University Voting</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    :root {
+      --bg-main: #050814;
+      --bg-card: #0b1020;
+      --accent: #1e90ff;
+      --accent-strong: #4cc3ff;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-soft: #1f2937;
+      --danger: #ff4b5c;
+    }
+
+    body {
+      margin:0;
+      font-family:system-ui,sans-serif;
+      background:radial-gradient(circle at top,#0b1530 0,#050814 45%,#02030a 100%);
+      color:var(--text-main);
+    }
+    .hidden { display:none; }
+
+    .top {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:12px 16px; background:#020617f5; border-bottom:1px solid #1f2937;
+    }
+    .top-left { display:flex; gap:8px; align-items:center; }
+    .logo-circle {
+      width:36px; height:36px; border-radius:50%; border:2px solid var(--accent);
+      display:flex; align-items:center; justify-content:center;
+      color:var(--accent-strong); font-size:11px;
+    }
+    .logo-text { display:flex; flex-direction:column; line-height:1.1; }
+    .logo-text span:first-child { font-size:13px; font-weight:600; text-transform:uppercase; }
+    .logo-text span:last-child { font-size:11px; color:var(--text-muted); }
+    .btn-small {
+      border:1px solid var(--accent); background:transparent; color:var(--accent-strong);
+      padding:6px 10px; border-radius:999px; cursor:pointer; font-size:12px;
+    }
+
+    .page { max-width:900px; margin:20px auto; padding:0 16px; }
+    .card {
+      background:#020617; border-radius:14px; border:1px solid var(--border-soft);
+      padding:16px; margin-bottom:16px;
+      box-shadow:0 18px 40px rgba(0,0,0,0.7);
+    }
+    .card-title { font-size:15px; font-weight:600; color:var(--accent-strong); margin-bottom:4px; }
+    .card-subtitle { font-size:12px; color:var(--text-muted); margin-bottom:10px; }
+    .field-label { font-size:12px; color:var(--text-muted); margin-bottom:3px; }
+    input,select {
+      width:100%; padding:7px 9px; border-radius:8px; border:1px solid #1f2937;
+      background:#020617; color:var(--text-main); font-size:13px;
+    }
+    input:focus,select:focus {
+      border-color:var(--accent);
+      box-shadow:0 0 0 1px rgba(30,144,255,0.4);
+      outline:none;
+    }
+    .btn {
+      border:none; border-radius:999px; padding:8px 14px; font-size:13px; cursor:pointer;
+      background:linear-gradient(135deg,#1e90ff,#4cc3ff); color:#020617; font-weight:600;
+      margin-top:6px; box-shadow:0 8px 18px rgba(30,144,255,0.4);
+    }
+    .btn-danger {
+      background:linear-gradient(135deg,#ff4b5c,#ff7b7b); color:#020617;
+      box-shadow:0 8px 18px rgba(255,75,92,0.4);
+    }
+
+    .list { list-style:none; padding:0; margin:0; max-height:220px; overflow-y:auto; font-size:13px; }
+    .list-item {
+      padding:6px 8px; border-radius:8px; border:1px solid #1f2937; background:#020617;
+      display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;
+    }
+    .small-btn {
+      border:1px solid var(--danger); background:transparent; color:var(--danger);
+      padding:3px 8px; border-radius:999px; cursor:pointer; font-size:11px;
+    }
+    .undo-btn {
+      border:1px solid var(--accent); background:transparent; color:var(--accent-strong);
+      padding:3px 8px; border-radius:999px; cursor:pointer; font-size:11px; margin-top:6px;
+    }
+
+    /* POPUPS */
+    .popup-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,0.6);
+      display:flex; align-items:center; justify-content:center;
+      opacity:0; pointer-events:none; transition:0.25s; z-index:999;
+    }
+    .popup-overlay.show { opacity:1; pointer-events:auto; }
+    .popup {
+      background:#020617; border:1px solid var(--accent); border-radius:14px;
+      padding:20px; width:280px; text-align:center;
+      transform:scale(0.8); opacity:0; transition:0.25s;
+    }
+    .popup.show { transform:scale(1); opacity:1; }
+    .popup-icon { font-size:28px; margin-bottom:8px; }
+    .popup-title { font-size:15px; font-weight:600; margin-bottom:4px; }
+    .popup-text { font-size:12px; color:var(--text-muted); margin-bottom:12px; white-space:pre-line; }
+    .popup-btns { display:flex; justify-content:space-between; gap:10px; }
+    .popup-cancel {
+      flex:1; padding:7px; border-radius:8px; border:1px solid var(--accent);
+      background:transparent; color:var(--accent-strong); cursor:pointer; font-size:13px;
+    }
+    .popup-delete {
+      flex:1; padding:7px; border-radius:8px; border:1px solid var(--danger);
+      background:var(--danger); color:#020617; cursor:pointer; font-size:13px; font-weight:600;
+    }
+  </style>
+</head>
+<body>
+  <!-- TOP BAR -->
+  <div class="top">
+    <div class="top-left">
+      <div class="logo-circle">RU</div>
+      <div class="logo-text">
+        <span>Rongo University</span>
+        <span>Admin Panel</span>
+      </div>
+    </div>
+    <button class="btn-small hidden" id="logoutBtn" onclick="adminLogout()">Logout</button>
+  </div>
+
+  <div class="page">
+    <!-- LOGIN -->
+    <div class="card" id="loginCard">
+      <div class="card-title">Admin Login</div>
+      <div class="card-subtitle">Enter admin password</div>
+      <div class="field-label">Password</div>
+      <input type="password" id="adminPass" required>
+      <button class="btn" onclick="adminLogin()">Login</button>
+    </div>
+
+    <!-- ADMIN CONTROLS -->
+    <div class="card hidden" id="adminCard">
+      <div class="card-title">Election Setup</div>
+
+      <!-- Election Title -->
+      <div class="field-label">Election Title</div>
+      <input type="text" id="electionTitle">
+      <button class="btn" onclick="saveElectionTitle()">Save Title</button>
+
+      <hr>
+      <!-- Seats -->
+      <div class="card-subtitle">Seats / Positions</div>
+      <input type="text" id="seatName" placeholder="Seat name">
+      <button class="btn" onclick="addSeat()">Add Seat</button>
+      <ul class="list" id="seatsList"></ul>
+      <button class="undo-btn" onclick="undoSeat()">Undo Seat Delete</button>
+
+      <hr>
+      <!-- Candidates -->
+      <div class="card-subtitle">Candidates</div>
+      <select id="seatSelect"></select>
+      <input type="text" id="candidateName" placeholder="Candidate name">
+      <button class="btn" onclick="addCandidate()">Add Candidate</button>
+      <button class="undo-btn" onclick="undoCandidate()">Undo Candidate Delete</button>
+
+      <hr>
+      <!-- Voters -->
+      <div class="card-subtitle">Register Voter</div>
+      <input type="text" id="voterAdm" placeholder="Admission number">
+      <input type="text" id="voterName" placeholder="Student name">
+      <button class="btn" onclick="addVoter()">Add Voter</button>
+      <ul class="list" id="votersList"></ul>
+      <button class="undo-btn" onclick="undoVoter()">Undo Voter Delete</button>
+
+      <hr>
+      <!-- Reset Voter Password -->
+      <div class="card-subtitle">Reset Voter Password</div>
+      <input type="text" id="resetAdm" placeholder="Admission number">
+      <button class="btn" onclick="resetPassword()">Reset Password</button>
+
+      <hr>
+      <!-- Admin Accounts (Master Admin only) -->
+      <div id="adminManage" class="hidden">
+        <div class="card-subtitle">Admin Accounts</div>
+        <input type="password" id="newAdminPass" placeholder="New admin password">
+        <button class="btn" onclick="addAdminPassword()">Add Admin Account</button>
+        <hr>
+      </div>
+
+      <!-- Logs (Master Admin only) -->
+      <div id="logsSection" class="hidden">
+        <div class="card-subtitle">System Logs</div>
+        <div id="logsList" style="font-size:12px; color:var(--text-muted); max-height:200px; overflow-y:auto;"></div>
+      </div>
+
+      <hr>
+      <!-- Reset Election -->
+      <button class="btn-danger" onclick="resetElection()">Reset Entire Election</button>
+    </div>
+  </div>
+
+  <!-- DELETE CONFIRMATION POPUP -->
+  <div class="popup-overlay" id="confirmOverlay">
+    <div class="popup" id="confirmBox">
+      <div class="popup-icon" style="color:var(--danger);">✘</div>
+      <div class="popup-title" id="confirmTitle">Are you sure?</div>
+      <div class="popup-text" id="confirmText">This action cannot be undone.</div>
+      <div class="popup-btns">
+        <button class="popup-cancel" onclick="closeConfirm()">Cancel</button>
+        <button class="popup-delete" onclick="confirmDelete()">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESET ELECTION POPUP -->
+  <div class="popup-overlay" id="resetOverlay">
+    <div class="popup" id="resetBox">
+      <div class="popup-icon" style="color:var(--danger);">✘</div>
+      <div class="popup-title">Reset Entire Election?</div>
+      <div class="popup-text">
+WARNING: This will permanently delete:
+• All seats
+• All candidates
+• All voters
+• All votes
+
+This action cannot be undone.
+      </div>
+      <input type="password" id="resetPassInput" placeholder="Enter Admin Password"
+        style="width:100%;padding:8px;border-radius:8px;border:1px solid #1f2937;background:#020617;color:white;margin-bottom:12px;">
+      <div class="popup-btns">
+        <button class="popup-cancel" onclick="closeResetPopup()">Cancel</button>
+        <button class="popup-delete" onclick="confirmResetElection()">Reset</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS / ERROR POPUP -->
+  <div class="popup-overlay" id="successOverlay">
+    <div class="popup" id="successBox">
+      <div class="popup-icon" id="successIcon">✔</div>
+      <div class="popup-title" id="successTitle">Success</div>
+      <div class="popup-text" id="successText">Action completed.</div>
+    </div>
+  </div>
+
+  <script>
+    const MASTER_ADMIN_PASSWORD = "RUAdmin2026";
+    let adminPasswords = [MASTER_ADMIN_PASSWORD];
+    let election = { title: "", seats: [], voters: [] };
+    let logs = JSON.parse(localStorage.getItem("logs") || "[]");
+
+    let lastSeat = null;
+    let lastCandidate = null;
+    let lastVoter = null;
+    let pendingDelete = null;
+    let isMasterAdmin = false;
+
+    function loadAdminPasswords() {
+      const data = localStorage.getItem("adminPasswords");
+      if (data) {
+        adminPasswords = JSON.parse(data);
+        if (!adminPasswords.includes(MASTER_ADMIN_PASSWORD)) {
+          adminPasswords.push(MASTER_ADMIN_PASSWORD);
+        }
+      }
+    }
+    function saveAdminPasswords() {
+      localStorage.setItem("adminPasswords", JSON.stringify(adminPasswords));
+    }
+    function loadElection() {
+      const data = localStorage.getItem("electionData");
+      if (data) election = JSON.parse(data);
+    }
+    function saveElection() {
+      localStorage.setItem("electionData", JSON.stringify(election));
+    }
+    function addLog(action, detail) {
+      const entry = { time: new Date().toLocaleString(), action, detail };
+      logs.push(entry);
+      localStorage.setItem("logs", JSON.stringify(logs));
+    }
+    function renderLogs() {
+      const logDiv = document.getElementById("logsList");
+      logDiv.innerHTML = "";
+      logs.forEach(l => {
+        const item = document.createElement("div");
+        item.textContent = `[${l.time}] ${l.action}: ${l.detail}`;
+        logDiv.appendChild(item);
+      });
+    }
+    function renderSeatSelect() {
+      const sel = document.getElementById("seatSelect");
+      sel.innerHTML = `<option value="">-- Select Seat --</option>`;
+      election.seats.forEach(seat => {
+        sel.innerHTML += `<option value="${seat.id}">${seat.name}</option>`;
+      });
+    }
+    function renderSeats() {
+      const list = document.getElementById("seatsList");
+      list.innerHTML = "";
+      election.seats.forEach(seat => {
+        const li = document.createElement("li");
+        li.className = "list-item";
+        li.innerHTML = `<span>${seat.name}</span>
+          <button class="small-btn" onclick="askDelete('seat','${seat.id}','${seat.name}')">Delete</button>`;
+        list.appendChild(li);
+        seat.candidates.forEach(c => {
+          const li2 = document.createElement("li");
+          li2.className = "list-item";
+          li2.style.marginLeft = "12px";
+          li2.innerHTML = `<span>${c.name}</span>
+            <button class="small-btn" onclick="askDelete('candidate','${seat.id}','${c.id}','${c.name}')">Delete</button>`;
+          list.appendChild(li2);
+        });
+      });
+    }
+    function renderVoters() {
+      const list = document.getElementById("votersList");
+      list.innerHTML = "";
+      election.voters.forEach(v => {
+        const status = v.password === "UNSET" ? "Password not set" : (v.hasVoted ? "Has Voted" : "Ready");
+        const li = document.createElement("li");
+        li.className = "list-item";
+        li.innerHTML = `<span>${v.admission} — ${v.name} (${status})</span>
+          <button class="small-btn" onclick="askDelete('voter','${v.admission}','${v.name}')">Delete</button>`;
+        list.appendChild(li);
+      });
+    }
+    function initialLoad() {
+      loadAdminPasswords();
+      loadElection();
+      renderSeats();
+      renderVoters();
+      renderSeatSelect();
+      const titleInput = document.getElementById("electionTitle");
+      if (titleInput) titleInput.value = election.title || "";
+    }
+    initialLoad();
+
+    function adminLogin() {
+      const pass = document.getElementById("adminPass").value.trim();
+      loadAdminPasswords();
+      if (adminPasswords.includes(pass)) {
+        isMasterAdmin = (pass === MASTER_ADMIN_PASSWORD);
+        document.getElementById("loginCard").classList.add("hidden");
+        document.getElementById("adminCard").classList.remove("hidden");
+        document.getElementById("logoutBtn").classList.remove("hidden");
+        if (isMasterAdmin) {
+          document.getElementById("adminManage").classList.remove("hidden");
+          document.getElementById("logsSection").classList.remove("hidden");
+          renderLogs();
+        } else {
+          document.getElementById("adminManage").classList.add("hidden");
+          document.getElementById("logsSection").classList.add("hidden");
+        }
+        showSuccess("Login Successful", "Welcome, Administrator.");
+      } else {
+        showError("Access Denied", "Incorrect admin password.");
+      }
+    }
+    function adminLogout() {
+      isMasterAdmin = false;
+      document.getElementById("adminCard").classList.add("hidden");
+      document.getElementById("loginCard").classList.remove("hidden");
+      document.getElementById("logoutBtn").classList.add("hidden");
+      document.getElementById("adminPass").value = "";
+      showSuccess("Logged Out", "You have been logged out.");
+    }
+
+    function addAdminPassword() {
+      if (!isMasterAdmin) {
+        showError("Access Denied", "Only the main admin can create other admins.");
+        return;
+      }
+      const newPass = document.getElementById("newAdminPass").value.trim();
+      if (!newPass) { showError("Invalid Password", "Please enter a password."); return; }
+      if (adminPasswords.includes(newPass)) { showError("Already Exists", "This admin password already exists."); return; }
+      adminPasswords.push(newPass);
+      saveAdminPasswords();
+      document.getElementById("newAdminPass").value = "";
+      addLog("Admin Added", "New admin account created.");
+      showSuccess("Admin Added", "New admin account created successfully.");
+    }
+
+    function saveElectionTitle() {
+      election.title = document.getElementById("electionTitle").value.trim();
+      saveElection();
+      addLog("Election Title Updated", election.title);
+      showSuccess("Saved", "Election title updated.");
+    }
+
+    function addSeat() {
+      const name = document.getElementById("seatName").value.trim();
+      if (!name) { showError("Error","Enter seat name."); return; }
+      const id = "seat_" + Date.now();
+      election.seats.push({ id, name, candidates: [], votes: {} });
+      document.getElementById("seatName").value = "";
+      saveElection(); renderSeats(); renderSeatSelect();
+      addLog("Seat Added", name);
+      showSuccess("Seat Added", name + " created.");
+    }
+    function undoSeat() {
+      if (!lastSeat) return;
+      election.seats.push(lastSeat);
+      lastSeat = null;
+      saveElection(); renderSeats(); renderSeatSelect();
+      showSuccess("Undo Successful", "Seat restored.");
+    }
+
+    function addCandidate() {
+      const seatId = document.getElementById("seatSelect").value;
+      const name = document.getElementById("candidateName").value.trim();
+      if (!seatId) { showError("Error","Select a seat."); return; }
+      if (!name) { showError("Error","Enter candidate name."); return; }
+      const seat = election.seats.find(s => s.id === seatId);
+      const id = "cand_" + Date.now();
+      seat.candidates.push({ id, name });
+      document.getElementById("candidateName").value = "";
+      saveElection(); renderSeats();
+      addLog("Candidate Added", name + " for " + seat.name);
+      showSuccess("Candidate Added", name + " added.");
+    }
+    function undoCandidate() {
+      if (!lastCandidate) return;
+      const seat = election.seats.find(s => s.id === lastCandidate.seatId);
+      if (seat) seat.candidates.push(lastCandidate.candidate);
+      lastCandidate = null;
+      saveElection(); renderSeats();
+      showSuccess("Undo Successful", "Candidate restored.");
+    }
+
+    function addVoter() {
+      const adm = document.getElementById("voterAdm").value.trim();
+      const name = document.getElementById("voterName").value.trim();
+      if (!adm || !name) { showError("Error","All fields required."); return; }
+      if (election.voters.find(v => v.admission === adm)) {
+        showError("Error","Voter already registered."); return;
+      }
+      election.voters.push({ admission: adm, name, password: "UNSET", hasVoted: false });
+      document.getElementById("voterAdm").value = "";
+      document.getElementById("voterName").value = "";
+      saveElection(); renderVoters();
+      addLog("Voter Registered", adm + " - " + name);
+      showSuccess("Voter Added", adm + " registered.");
+    }
+    function undoVoter() {
+      if (!lastVoter) return;
+      election.voters.push(lastVoter);
+      lastVoter = null;
+      saveElection(); renderVoters();
+      showSuccess("Undo Successful", "Voter restored.");
+    }
+
+    function askDelete(type, a, b, c) {
+      // type: 'seat' (a=id, b=name), 'candidate' (a=seatId, b=candId, c=name), 'voter' (a=adm, b=name)
+      if (type === "seat") {
+        pendingDelete = { type, seatId: a, name: b };
+        document.getElementById("confirmTitle").innerText = "✘ Confirm Delete";
+        document.getElementById("confirmText").innerText = `Delete Seat: ${b}\nThis action cannot be undone.`;
+      } else if (type === "candidate") {
+        pendingDelete = { type, seatId: a, candId: b, name: c };
+        document.getElementById("confirmTitle").innerText = "✘ Confirm Delete";
+        document.getElementById("confirmText").innerText = `Delete Candidate: ${c}\nThis action cannot be undone.`;
+      } else if (type === "voter") {
+        pendingDelete = { type, adm: a, name: b };
+        document.getElementById("confirmTitle").innerText = "✘ Confirm Delete";
+        document.getElementById("confirmText").innerText = `Delete Voter: ${a} — ${b}\nThis action cannot be undone.`;
+      }
+      document.getElementById("confirmOverlay").classList.add("show");
+      document.getElementById("confirmBox").classList.add("show");
+    }
+    function closeConfirm() {
+      document.getElementById("confirmOverlay").classList.remove("show");
+      document.getElementById("confirmBox").classList.remove("show");
+      pendingDelete = null;
+    }
+    function confirmDelete() {
+      if (!pendingDelete) return;
+      if (pendingDelete.type === "seat") {
+        const seat = election.seats.find(s => s.id === pendingDelete.seatId);
+        if (seat) {
+          lastSeat = JSON.parse(JSON.stringify(seat));
+          election.seats = election.seats.filter(s => s.id !== pendingDelete.seatId);
+          addLog("Seat Deleted", pendingDelete.name);
+          saveElection(); renderSeats(); renderSeatSelect();
+          showSuccess("Seat Deleted", pendingDelete.name + " removed.");
+        }
+      } else if (pendingDelete.type === "candidate") {
+        const seat = election.seats.find(s => s.id === pendingDelete.seatId);
+        if (seat) {
+          const cand = seat.candidates.find(c => c.id === pendingDelete.candId);
+          if (cand) {
+            lastCandidate = { seatId: seat.id, candidate: JSON.parse(JSON.stringify(cand)) };
+            seat.candidates = seat.candidates.filter(c => c.id !== pendingDelete.candId);
+            if (seat.votes && seat.votes[pendingDelete.candId]) delete seat.votes[pendingDelete.candId];
+            addLog("Candidate Deleted", pendingDelete.name + " from " + seat.name);
+            saveElection(); renderSeats();
+            showSuccess("Candidate Deleted", pendingDelete.name + " removed.");
+          }
+        }
+      } else if (pendingDelete.type === "voter") {
+        const voter = election.voters.find(v => v.admission === pendingDelete.adm);
+        if (voter) {
+          lastVoter = JSON.parse(JSON.stringify(voter));
+          election.voters = election.voters.filter(v => v.admission !== pendingDelete.adm);
+          addLog("Voter Deleted", pendingDelete.adm + " — " + pendingDelete.name);
+          saveElection(); renderVoters();
+          showSuccess("Voter Deleted", pendingDelete.adm + " removed.");
+        }
+      }
+      closeConfirm();
+    }
+
+    function showSuccess(title, text) {
+      const icon = document.getElementById("successIcon");
+      icon.textContent = "✔";
+      icon.style.color = getComputedStyle(document.documentElement).getPropertyValue("--accent-strong").trim();
+      document.getElementById("successTitle").innerText = title;
+      document.getElementById("successText").innerText = text;
+      const overlay = document.getElementById("successOverlay");
+      const box = document.getElementById("successBox");
+      overlay.classList.add("show"); box.classList.add("show");
+      setTimeout(() => { overlay.classList.remove("show"); box.classList.remove("show"); }, 1500);
+    }
+    function showError(title, text) {
+      const icon = document.getElementById("successIcon");
+      icon.textContent = "✘";
+      icon.style.color = getComputedStyle(document.documentElement).getPropertyValue("--danger").trim();
+      document.getElementById("successTitle").innerText = title;
+      document.getElementById("successText").innerText = text;
+      const overlay = document.getElementById("successOverlay");
+      const box = document.getElementById("successBox");
+      overlay.classList.add("show"); box.classList.add("show");
+      setTimeout(() => { overlay.classList.remove("show"); box.classList.remove("show"); }, 1500);
+    }
+
+    function resetPassword() {
+      const adm = document.getElementById("resetAdm").value.trim();
+      if (!adm) { showError("Error","Enter admission number."); return; }
+      const voter = election.voters.find(v => v.admission === adm);
+      if (!voter) { showError("Not Found","No voter with that admission."); return; }
+      voter.password = "UNSET"; voter.hasVoted = false;
+      saveElection();
+      addLog("Password Reset", adm);
+      showSuccess("Password Reset", `Password reset for ${adm}.`);
+      renderVoters();
+    }
+
+    function resetElection() {
+      document.getElementById("resetOverlay").classList.add("show");
+      document.getElementById("resetBox").classList.add("show");
+    }
+    function closeResetPopup() {
+      document.getElementById("resetOverlay").classList.remove("show");
+      document.getElementById("resetBox").classList.remove("show");
+      document.getElementById("resetPassInput").value = "";
+    }
+    function confirmResetElection() {
+      const pass = document.getElementById("resetPassInput").value.trim();
+      if (pass !== MASTER_ADMIN_PASSWORD) {
+        showError("Access Denied", "Only the main admin can reset the entire election.");
+        return;
+      }
+      election = { title: "", seats: [], voters: [] };
+      logs = [];
+      saveElection(); renderSeats(); renderVoters(); renderSeatSelect();
+      localStorage.setItem("logs", JSON.stringify(logs));
+      closeResetPopup();
+      showSuccess("Election Reset", "All election data has been deleted.");
+    }
+  </script>
+</body>
+</html>

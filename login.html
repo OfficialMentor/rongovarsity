@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voter Login - Rongo University</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --bg-main: #050814;
+      --accent: #1e90ff;
+      --accent-strong: #4cc3ff;
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --border-soft: #1f2937;
+      --danger: #ff4b5c;
+    }
+    body {
+      margin:0; font-family:system-ui,sans-serif;
+      background:radial-gradient(circle at top,#0b1530 0,#050814 45%,#02030a 100%);
+      color:var(--text-main); display:flex; align-items:center; justify-content:center; min-height:100vh;
+    }
+    .card {
+      background:#020617; border:1px solid var(--border-soft);
+      border-radius:14px; padding:30px; width:320px;
+      box-shadow:0 18px 40px rgba(0,0,0,0.7); text-align:center;
+    }
+    h1 { font-size:18px; color:var(--accent-strong); margin-bottom:10px; }
+    .field-label { font-size:12px; color:var(--text-muted); margin-top:10px; text-align:left; }
+    input { width:100%; padding:8px; border-radius:8px; border:1px solid #1f2937; background:#020617; color:var(--text-main); margin-top:4px; }
+    .btn { width:100%; border:none; border-radius:999px; padding:10px; font-size:14px; cursor:pointer; background:linear-gradient(135deg,#1e90ff,#4cc3ff); color:#020617; font-weight:600; margin-top:14px; }
+    hr { border:0; border-top:1px solid #1f2937; margin:16px 0; }
+
+    /* POPUP */
+    .popup-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:0.25s; z-index:999; }
+    .popup-overlay.show { opacity:1; pointer-events:auto; }
+    .popup { background:#020617; border:1px solid var(--accent); border-radius:14px; padding:20px; width:260px; text-align:center; transform:scale(0.8); opacity:0; transition:0.25s; }
+    .popup.show { transform:scale(1); opacity:1; }
+    .popup-icon { font-size:28px; margin-bottom:8px; }
+    .popup-title { font-size:15px; font-weight:600; margin-bottom:4px; }
+    .popup-text { font-size:12px; color:var(--text-muted); margin-bottom:12px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Voter Login</h1>
+    <form onsubmit="loginVoter(event)">
+      <div class="field-label">Admission Number</div>
+      <input type="text" id="loginAdm" required>
+      <div class="field-label">Password</div>
+      <input type="password" id="loginPass" required>
+      <button class="btn" type="submit">Login</button>
+    </form>
+    <hr>
+    <button class="btn" onclick="goRegister()">Register as Voter</button>
+    <button class="btn" onclick="goBack()">Back</button>
+  </div>
+
+  <!-- SUCCESS / ERROR POPUP -->
+  <div class="popup-overlay" id="popupOverlay">
+    <div class="popup" id="popupBox">
+      <div class="popup-icon" id="popupIcon">✔</div>
+      <div class="popup-title" id="popupTitle">Message</div>
+      <div class="popup-text" id="popupText">Details here.</div>
+    </div>
+  </div>
+
+<script>
+function showPopup(success, title, text) {
+  const icon = document.getElementById("popupIcon");
+  icon.textContent = success ? "✔" : "✘";
+  icon.style.color = success ? getComputedStyle(document.documentElement).getPropertyValue("--accent-strong").trim()
+                             : getComputedStyle(document.documentElement).getPropertyValue("--danger").trim();
+  document.getElementById("popupTitle").innerText = title;
+  document.getElementById("popupText").innerText = text;
+  const overlay = document.getElementById("popupOverlay");
+  const box = document.getElementById("popupBox");
+  overlay.classList.add("show"); box.classList.add("show");
+  setTimeout(() => { overlay.classList.remove("show"); box.classList.remove("show"); }, 1500);
+}
+
+function loginVoter(event) {
+  event.preventDefault();
+  const adm = document.getElementById("loginAdm").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
+  const data = localStorage.getItem("electionData");
+  if (!data) { showPopup(false,"Error","No election data found."); return; }
+  const election = JSON.parse(data);
+  const voter = election.voters.find(v => v.admission === adm);
+  if (!voter) { showPopup(false,"Access Denied","Admission number not found."); return; }
+  if (voter.password === "UNSET") { showPopup(false,"Access Denied","Password not set. Please register."); return; }
+  if (voter.password !== pass) { showPopup(false,"Access Denied","Incorrect password."); return; }
+  if (voter.hasVoted) { showPopup(false,"Access Denied","You have already voted."); return; }
+  localStorage.setItem("currentVoter", adm);
+  showPopup(true,"Login Successful","Redirecting to ballot...");
+  setTimeout(() => { window.location.href = "vote.html"; }, 1500);
+}
+
+function goRegister() {
+  window.location.href = "register-password.html";
+}
+
+function goBack() {
+  window.history.back();
+}
+</script>
+</body>
+</html>
