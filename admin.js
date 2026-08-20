@@ -20,7 +20,7 @@ import {
 // -------------------------
 async function loadSeats() {
   const seats = await getSeats();
-  const container = document.getElementById("seatList");
+  const container = document.getElementById("seatsList");
   container.innerHTML = "";
 
   for (const id in seats) {
@@ -31,6 +31,17 @@ async function loadSeats() {
       <button onclick="removeSeat('${id}')">Delete</button>
     `;
     container.appendChild(div);
+  }
+
+  // also refresh seatSelect dropdown
+  const select = document.getElementById("seatSelect");
+  select.innerHTML = "";
+  for (const id in seats) {
+    const seat = seats[id];
+    const option = document.createElement("option");
+    option.value = id;
+    option.textContent = seat.name;
+    select.appendChild(option);
   }
 }
 
@@ -43,6 +54,7 @@ window.createSeat = async function () {
 
   await addSeat(name);
   await addLog("Add Seat", name);
+  document.getElementById("seatName").value = "";
   loadSeats();
 };
 
@@ -61,7 +73,7 @@ window.removeSeat = async function (id) {
 async function loadCandidates() {
   const candidates = await getCandidates();
   const seats = await getSeats();
-  const container = document.getElementById("candidateList");
+  const container = document.getElementById("candidatesList");
   container.innerHTML = "";
 
   for (const id in candidates) {
@@ -82,12 +94,13 @@ async function loadCandidates() {
 // -------------------------
 window.createCandidate = async function () {
   const name = document.getElementById("candidateName").value.trim();
-  const seatId = document.getElementById("candidateSeat").value;
+  const seatId = document.getElementById("seatSelect").value;
 
-  if (!name || !seatId) return alert("Enter candidate name and seat");
+  if (!name || !seatId) return alert("Enter candidate name and select seat");
 
   await addCandidate(seatId, name);
   await addLog("Add Candidate", name);
+  document.getElementById("candidateName").value = "";
   loadCandidates();
 };
 
@@ -105,7 +118,7 @@ window.removeCandidate = async function (id) {
 // -------------------------
 async function loadVoters() {
   const voters = await getVoters();
-  const container = document.getElementById("voterList");
+  const container = document.getElementById("votersList");
   container.innerHTML = "";
 
   for (const adm in voters) {
@@ -131,6 +144,8 @@ window.createVoter = async function () {
 
   await addVoter(adm, name);
   await addLog("Add Voter", adm);
+  document.getElementById("voterAdm").value = "";
+  document.getElementById("voterName").value = "";
   loadVoters();
 };
 
@@ -150,6 +165,7 @@ window.resetVoterPass = async function (adm) {
   await resetPassword(adm);
   await addLog("Reset Password", adm);
   alert("Password reset to UNSET");
+  loadVoters();
 };
 
 // -------------------------
@@ -168,11 +184,12 @@ window.updateTitle = async function () {
 // ADD ADMIN PASSWORD
 // -------------------------
 window.createAdminPassword = async function () {
-  const pass = document.getElementById("adminPass").value.trim();
+  const pass = document.getElementById("newAdminPass").value.trim();
   if (!pass) return alert("Enter password");
 
   await addAdminPassword(pass);
   await addLog("Add Admin Password", pass);
+  document.getElementById("newAdminPass").value = "";
   alert("Admin password added");
 };
 
