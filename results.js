@@ -1,8 +1,5 @@
 // results.js
-import {
-  getSeats,
-  getCandidates
-} from "./firebase.js";
+import { getSeats, getCandidates } from "./firebase.js";
 
 // -------------------------
 // LOAD RESULTS
@@ -10,35 +7,30 @@ import {
 async function loadResults() {
   const seats = await getSeats();
   const candidates = await getCandidates();
-
-  const container = document.getElementById("resultsContainer");
+  const container = document.getElementById("resultsList");
   container.innerHTML = "";
 
-  // Group candidates by seat
   for (const seatId in seats) {
     const seat = seats[seatId];
-
     const seatDiv = document.createElement("div");
-    seatDiv.classList.add("seat-block");
-
     seatDiv.innerHTML = `<h3>${seat.name}</h3>`;
+    container.appendChild(seatDiv);
 
-    // List candidates under this seat
+    // filter candidates belonging to this seat
     for (const candId in candidates) {
       const cand = candidates[candId];
-
       if (cand.seatId === seatId) {
-        const candDiv = document.createElement("p");
-        candDiv.textContent = `${cand.name}: ${cand.votes} votes`;
-        seatDiv.appendChild(candDiv);
+        const votes = cand.votes || 0;
+        const candDiv = document.createElement("div");
+        candDiv.innerHTML = `<p>${cand.name}: ${votes} votes</p>`;
+        container.appendChild(candDiv);
       }
     }
-
-    container.appendChild(seatDiv);
   }
 }
 
 // -------------------------
-// INITIAL LOAD
+// AUTO REFRESH RESULTS
 // -------------------------
+setInterval(loadResults, 3000); // refresh every 3 seconds
 loadResults();
