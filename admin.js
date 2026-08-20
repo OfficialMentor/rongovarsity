@@ -19,19 +19,30 @@ import {
 // -------------------------
 // ADMIN LOGIN
 // -------------------------
-document.getElementById("loginBtn").onclick = () => {
-  const pass = document.getElementById("adminPass").value.trim();
+document.addEventListener("DOMContentLoaded", () => {
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-  // Replace with your real admin password or Firebase check
-  if (pass === "RUAdmin2026") {
-    document.getElementById("loginCard").classList.add("hidden");
-    document.getElementById("adminCard").classList.remove("hidden");
-    document.getElementById("logoutBtn").classList.remove("hidden");
-    alert("Login successful!");
-  } else {
-    alert("Incorrect admin password.");
-  }
-};
+  loginBtn.addEventListener("click", () => {
+    const pass = document.getElementById("adminPass").value.trim();
+
+    if (pass === "RUAdmin2026") {
+      document.getElementById("loginCard").classList.add("hidden");
+      document.getElementById("adminCard").classList.remove("hidden");
+      logoutBtn.classList.remove("hidden");
+      alert("Login successful!");
+    } else {
+      alert("Incorrect admin password.");
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    document.getElementById("adminCard").classList.add("hidden");
+    document.getElementById("loginCard").classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+  });
+});
+
 
 // -------------------------
 // LOGOUT
