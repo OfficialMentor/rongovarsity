@@ -15,6 +15,34 @@ import {
   addLog
 } from "./firebase.js";
 
+
+// -------------------------
+// ADMIN LOGIN
+// -------------------------
+document.getElementById("loginBtn").onclick = () => {
+  const pass = document.getElementById("adminPass").value.trim();
+
+  // Replace with your real admin password or Firebase check
+  if (pass === "RUAdmin2026") {
+    document.getElementById("loginCard").classList.add("hidden");
+    document.getElementById("adminCard").classList.remove("hidden");
+    document.getElementById("logoutBtn").classList.remove("hidden");
+    alert("Login successful!");
+  } else {
+    alert("Incorrect admin password.");
+  }
+};
+
+// -------------------------
+// LOGOUT
+// -------------------------
+document.getElementById("logoutBtn").onclick = () => {
+  document.getElementById("adminCard").classList.add("hidden");
+  document.getElementById("loginCard").classList.remove("hidden");
+  document.getElementById("logoutBtn").classList.add("hidden");
+};
+
+
 // -------------------------
 // LOAD SEATS
 // -------------------------
