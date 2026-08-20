@@ -1,28 +1,37 @@
 // vote.js
 import {
   getVoter,
-  saveVote,
+  markVoterAsVoted,
   incrementCandidateVote,
-  getCandidates,
-  markVoterAsVoted
+  saveVote,
+  getCandidates
 } from "./firebase.js";
 
 // -------------------------
-// LOGIN
+// VOTER LOGIN
 // -------------------------
 window.voterLogin = async function () {
-  const adm = document.getElementById("admInput").value.trim();
-  const pass = document.getElementById("passInput").value.trim();
+  const adm = document.getElementById("loginAdm").value.trim();
+  const pass = document.getElementById("loginPass").value.trim();
 
-  if (!adm || !pass) return alert("Enter admission number and password");
+  if (!adm || !pass) return alert("Enter admission and password");
 
   const voter = await getVoter(adm);
+  if (!voter) return alert("No voter found with that admission number");
 
-  if (!voter) return alert("Voter not found");
-  if (voter.password !== pass) return alert("Incorrect password");
-  if (voter.hasVoted) return alert("You have already voted");
+  if (voter.password === "UNSET") {
+    return alert("Password not set. Contact admin.");
+  }
 
-  // Show voting UI
+  if (voter.password !== pass) {
+    return alert("Incorrect password");
+  }
+
+  if (voter.hasVoted) {
+    return alert("You have already voted");
+  }
+
+  // login success → show voting page
   document.getElementById("loginCard").classList.add("hidden");
   document.getElementById("voteCard").classList.remove("hidden");
 
@@ -39,26 +48,33 @@ async function loadCandidates() {
 
   for (const id in candidates) {
     const cand = candidates[id];
-
-    const btn = document.createElement("button");
-    btn.textContent = `${cand.name} (${cand.seatId})`;
-    btn.onclick = () => castVote(id);
-
-    container.appendChild(btn);
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <p>${cand.name}</p>
+      <button onclick="castVote('${id}')">Vote</button>
+    `;
+    container.appendChild(div);
   }
 }
 
 // -------------------------
 // CAST VOTE
 // -------------------------
-async function castVote(candId) {
-  const adm = document.getElementById("admInput").value.trim();
+window.castVote = async function (candId) {
+  const adm = document.getElementById("loginAdm").value.trim();
 
+  // save vote record
   await saveVote(adm, candId);
+
+  // increment candidate vote count
   await incrementCandidateVote(candId);
+
+  // mark voter as voted
   await markVoterAsVoted(adm);
 
-  alert("Vote cast successfully!");
+  alert("Vote submitted successfully!");
 
+  // hide voting card
   document.getElementById("voteCard").classList.add("hidden");
-}
+  document.getElementById("thankYouCard").classList.remove("hidden");
+};
