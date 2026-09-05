@@ -1,240 +1,154 @@
 // admin.js
-import {
-  addSeat,
-  deleteSeat,
-  getSeats,
-  addCandidate,
-  deleteCandidate,
-  getCandidates,
-  addVoter,
-  deleteVoter,
-  getVoters,
-  resetPassword,
-  updateElectionTitle,
-  addAdminPassword,
-  addLog
-} from "./firebase.js";
+import { db } from "./firebase.js";
 
+// DOM references
+const loginBtn = document.getElementById("loginBtn");
+const adminPassInput = document.getElementById("adminPass");
+const loginCard = document.getElementById("loginCard");
+const adminCard = document.getElementById("adminCard");
+const logoutBtn = document.getElementById("logoutBtn");
 
-// -------------------------
-// ADMIN LOGIN
-// -------------------------
-document.addEventListener("DOMContentLoaded", () => {
-  const loginBtn = document.getElementById("loginBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
+const saveTitleBtn = document.getElementById("saveTitleBtn");
+const electionTitleInput = document.getElementById("electionTitle");
 
-  loginBtn.addEventListener("click", () => {
-    const pass = document.getElementById("adminPass").value.trim();
+const addSeatBtn = document.getElementById("addSeatBtn");
+const seatNameInput = document.getElementById("seatName");
+const seatsList = document.getElementById("seatsList");
+const seatSelect = document.getElementById("seatSelect");
 
-    if (pass === "RUAdmin2026") {
-      document.getElementById("loginCard").classList.add("hidden");
-      document.getElementById("adminCard").classList.remove("hidden");
+const addCandidateBtn = document.getElementById("addCandidateBtn");
+const candidateNameInput = document.getElementById("candidateName");
+const candidatesList = document.getElementById("candidatesList");
+
+const addVoterBtn = document.getElementById("addVoterBtn");
+const voterAdmInput = document.getElementById("voterAdm");
+const voterNameInput = document.getElementById("voterName");
+const votersList = document.getElementById("votersList");
+
+const resetPassBtn = document.getElementById("resetPassBtn");
+const resetAdmInput = document.getElementById("resetAdm");
+
+const addAdminBtn = document.getElementById("addAdminBtn");
+const newAdminPassInput = document.getElementById("newAdminPass");
+
+const resetElectionBtn = document.getElementById("resetElectionBtn");
+const logsList = document.getElementById("logsList");
+
+// --- LOGIN ---
+loginBtn.addEventListener("click", () => {
+  const pass = adminPassInput.value.trim();
+  if (pass === "yourAdminPassword") {
+    if (confirm("Login successful! Proceed to Admin Panel?")) {
+      loginCard.classList.add("hidden");
+      adminCard.classList.remove("hidden");
       logoutBtn.classList.remove("hidden");
-      alert("Login successful!");
-    } else {
-      alert("Incorrect admin password.");
+      logAction("Admin logged in.");
     }
-  });
-
-  logoutBtn.addEventListener("click", () => {
-    document.getElementById("adminCard").classList.add("hidden");
-    document.getElementById("loginCard").classList.remove("hidden");
-    logoutBtn.classList.add("hidden");
-  });
+  } else {
+    alert("❌ Incorrect password.");
+  }
 });
 
-
-// -------------------------
-// LOGOUT
-// -------------------------
-document.getElementById("logoutBtn").onclick = () => {
-  document.getElementById("adminCard").classList.add("hidden");
-  document.getElementById("loginCard").classList.remove("hidden");
-  document.getElementById("logoutBtn").classList.add("hidden");
-};
-
-
-// -------------------------
-// LOAD SEATS
-// -------------------------
-async function loadSeats() {
-  const seats = await getSeats();
-  const container = document.getElementById("seatsList");
-  container.innerHTML = "";
-
-  for (const id in seats) {
-    const seat = seats[id];
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p>${seat.name}</p>
-      <button onclick="removeSeat('${id}')">Delete</button>
-    `;
-    container.appendChild(div);
+logoutBtn.addEventListener("click", () => {
+  if (confirm("Logout now?")) {
+    adminCard.classList.add("hidden");
+    loginCard.classList.remove("hidden");
+    logoutBtn.classList.add("hidden");
+    adminPassInput.value = "";
+    logAction("Admin logged out.");
   }
+});
 
-  // also refresh seatSelect dropdown
-  const select = document.getElementById("seatSelect");
-  select.innerHTML = "";
-  for (const id in seats) {
-    const seat = seats[id];
-    const option = document.createElement("option");
-    option.value = id;
-    option.textContent = seat.name;
-    select.appendChild(option);
+// --- SAVE TITLE ---
+saveTitleBtn.addEventListener("click", () => {
+  const title = electionTitleInput.value.trim();
+  if (title) {
+    db.ref("electionTitle").set(title);
+    alert("✅ Title saved.");
+    logAction("Election title set: " + title);
   }
+});
+
+// --- ADD SEAT ---
+addSeatBtn.addEventListener("click", () => {
+  const seat = seatNameInput.value.trim();
+  if (seat) {
+    db.ref("seats").push(seat);
+    alert("✅ Seat added.");
+    logAction("Seat added: " + seat);
+  }
+});
+
+// --- ADD CANDIDATE ---
+addCandidateBtn.addEventListener("click", () => {
+  const seat = seatSelect.value;
+  const candidate = candidateNameInput.value.trim();
+  if (seat && candidate) {
+    db.ref("candidates").push({ seat, name: candidate });
+    alert("✅ Candidate added.");
+    logAction("Candidate added: " + candidate + " for " + seat);
+  }
+});
+
+// --- ADD VOTER ---
+addVoterBtn.addEventListener("click", () => {
+  const adm = voterAdmInput.value.trim();
+  const name = voterNameInput.value.trim();
+  if (adm && name) {
+    db.ref("voters").push({ adm, name, password: "default123" });
+    alert("✅ Voter registered.");
+    logAction("Voter registered: " + name + " (" + adm + ")");
+  }
+});
+
+// --- RESET VOTER PASSWORD ---
+resetPassBtn.addEventListener("click", () => {
+  const adm = resetAdmInput.value.trim();
+  if (adm) {
+    db.ref("voters").orderByChild("adm").equalTo(adm).once("value", snapshot => {
+      snapshot.forEach(child => {
+        child.ref.update({ password: "default123" });
+      });
+      alert("✅ Password reset for " + adm);
+      logAction("Password reset for voter: " + adm);
+    });
+  }
+});
+
+// --- ADD ADMIN ACCOUNT ---
+addAdminBtn.addEventListener("click", () => {
+  const newPass = newAdminPassInput.value.trim();
+  if (newPass) {
+    db.ref("admins").push({ password: newPass });
+    alert("✅ New admin account added.");
+    logAction("New admin account created.");
+  }
+});
+
+// --- RESET ENTIRE ELECTION ---
+resetElectionBtn.addEventListener("click", () => {
+  if (confirm("⚠ WARNING: This will delete ALL election data. Continue?")) {
+    Promise.all([
+      db.ref("electionTitle").remove(),
+      db.ref("seats").remove(),
+      db.ref("candidates").remove(),
+      db.ref("voters").remove(),
+      db.ref("votes").remove()
+    ])
+    .then(() => {
+      alert("✅ Election reset successfully!");
+      logAction("Election reset.");
+    })
+    .catch(err => {
+      console.error(err);
+      alert("❌ Error resetting election.");
+    });
+  }
+});
+
+// --- LOGGING ---
+function logAction(msg) {
+  const time = new Date().toLocaleString();
+  const entry = time + " - " + msg + "<br>";
+  logsList.innerHTML += entry;
 }
-
-// -------------------------
-// ADD SEAT
-// -------------------------
-window.createSeat = async function () {
-  const name = document.getElementById("seatName").value.trim();
-  if (!name) return alert("Enter seat name");
-
-  await addSeat(name);
-  await addLog("Add Seat", name);
-  document.getElementById("seatName").value = "";
-  loadSeats();
-};
-
-// -------------------------
-// DELETE SEAT
-// -------------------------
-window.removeSeat = async function (id) {
-  await deleteSeat(id);
-  await addLog("Delete Seat", id);
-  loadSeats();
-};
-
-// -------------------------
-// LOAD CANDIDATES
-// -------------------------
-async function loadCandidates() {
-  const candidates = await getCandidates();
-  const seats = await getSeats();
-  const container = document.getElementById("candidatesList");
-  container.innerHTML = "";
-
-  for (const id in candidates) {
-    const cand = candidates[id];
-    const seatName = seats[cand.seatId]?.name || "Unknown Seat";
-
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p>${cand.name} — ${seatName}</p>
-      <button onclick="removeCandidate('${id}')">Delete</button>
-    `;
-    container.appendChild(div);
-  }
-}
-
-// -------------------------
-// ADD CANDIDATE
-// -------------------------
-window.createCandidate = async function () {
-  const name = document.getElementById("candidateName").value.trim();
-  const seatId = document.getElementById("seatSelect").value;
-
-  if (!name || !seatId) return alert("Enter candidate name and select seat");
-
-  await addCandidate(seatId, name);
-  await addLog("Add Candidate", name);
-  document.getElementById("candidateName").value = "";
-  loadCandidates();
-};
-
-// -------------------------
-// DELETE CANDIDATE
-// -------------------------
-window.removeCandidate = async function (id) {
-  await deleteCandidate(id);
-  await addLog("Delete Candidate", id);
-  loadCandidates();
-};
-
-// -------------------------
-// LOAD VOTERS
-// -------------------------
-async function loadVoters() {
-  const voters = await getVoters();
-  const container = document.getElementById("votersList");
-  container.innerHTML = "";
-
-  for (const adm in voters) {
-    const voter = voters[adm];
-    const div = document.createElement("div");
-    div.innerHTML = `
-      <p>${voter.admission} — ${voter.name}</p>
-      <button onclick="removeVoter('${adm}')">Delete</button>
-      <button onclick="resetVoterPass('${adm}')">Reset Password</button>
-    `;
-    container.appendChild(div);
-  }
-}
-
-// -------------------------
-// ADD VOTER
-// -------------------------
-window.createVoter = async function () {
-  const adm = document.getElementById("voterAdm").value.trim();
-  const name = document.getElementById("voterName").value.trim();
-
-  if (!adm || !name) return alert("Enter admission number and name");
-
-  await addVoter(adm, name);
-  await addLog("Add Voter", adm);
-  document.getElementById("voterAdm").value = "";
-  document.getElementById("voterName").value = "";
-  loadVoters();
-};
-
-// -------------------------
-// DELETE VOTER
-// -------------------------
-window.removeVoter = async function (adm) {
-  await deleteVoter(adm);
-  await addLog("Delete Voter", adm);
-  loadVoters();
-};
-
-// -------------------------
-// RESET PASSWORD
-// -------------------------
-window.resetVoterPass = async function (adm) {
-  await resetPassword(adm);
-  await addLog("Reset Password", adm);
-  alert("Password reset to UNSET");
-  loadVoters();
-};
-
-// -------------------------
-// UPDATE ELECTION TITLE
-// -------------------------
-window.updateTitle = async function () {
-  const title = document.getElementById("electionTitle").value.trim();
-  if (!title) return alert("Enter title");
-
-  await updateElectionTitle(title);
-  await addLog("Update Title", title);
-  alert("Election title updated");
-};
-
-// -------------------------
-// ADD ADMIN PASSWORD
-// -------------------------
-window.createAdminPassword = async function () {
-  const pass = document.getElementById("newAdminPass").value.trim();
-  if (!pass) return alert("Enter password");
-
-  await addAdminPassword(pass);
-  await addLog("Add Admin Password", pass);
-  document.getElementById("newAdminPass").value = "";
-  alert("Admin password added");
-};
-
-// -------------------------
-// INITIAL LOAD
-// -------------------------
-loadSeats();
-loadCandidates();
-loadVoters();
